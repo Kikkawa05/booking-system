@@ -7,6 +7,34 @@
 </head>
 <body>
   <h1>予約システム</h1>
-  <p>GitHub Pagesの公開テストです。</p>
+  <p id="status">設定を読み込み中…</p>
+  <ul id="settings"></ul>
+
+  <script>
+    // Google Apps ScriptのウェブアプリURL(末尾が /exec のもの)に置き換える
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycby0l6BnbrJd7gjl_6gYJ-whQloyQOdfKA3G5iIuOIcNEJ1oHuXpbEa7D40MnKpi-Anr/exec';
+
+    async function loadSettings() {
+      const status = document.getElementById('status');
+      try {
+        const res = await fetch(GAS_URL);        // Google Apps Scriptにデータを取りに行く
+        const data = await res.json();           // 返ってきたJSONを読み取る
+        if (!data.ok) throw new Error('サーバー側でエラーが起きました');
+
+        const list = document.getElementById('settings');
+        for (const [key, value] of Object.entries(data.settings)) {
+          const li = document.createElement('li');
+          li.textContent = `${key}:${value}`;
+          list.appendChild(li);
+        }
+        status.textContent = '設定を読み込みました';
+      } catch (err) {
+        status.textContent = '読み込みに失敗しました:' + err.message;
+        console.error(err);
+      }
+    }
+
+    loadSettings();
+  </script>
 </body>
 </html>
