@@ -2,39 +2,89 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>予約システム テスト</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>予約システム(空き確認テスト)</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 16px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select, button { font-size: 16px; padding: 8px; margin-top: 4px; width: 100%; box-sizing: border-box; }
+    button { margin-top: 20px; }
+    #times li { padding: 4px 0; }
+  </style>
 </head>
 <body>
   <h1>予約システム</h1>
-  <p id="status">設定を読み込み中…</p>
-  <ul id="settings"></ul>
+  <p>空き確認のテスト画面です</p>
+
+  <label for="date">日付</label>
+  <input type="date" id="date">
+
+  <label for="plan">プラン</label>
+  <select id="plan">
+    <option value="A">A:カフェ60分+初回相談75分</option>
+    <option value="B">B:相談90分</option>
+  </select>
+
+  <label for="people">人数</label>
+  <select id="people">
+    <option value="1">1人</option>
+    <option value="2">2人</option>
+  </select>
+
+  <button id="search">空いている時間を調べる</button>
+
+  <p id="message"></p>
+  <ul id="times"></ul>
 
   <script>
-    // Google Apps ScriptのウェブアプリURL(末尾が /exec のもの)に置き換える
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycby0l6BnbrJd7gjl_6gYJ-whQloyQOdfKA3G5iIuOIcNEJ1oHuXpbEa7D40MnKpi-Anr/exec';
+    const GAS_URL = 'ここに今のGoogle Apps ScriptのURLを貼る';
 
-    async function loadSettings() {
-      const status = document.getElementById('status');
+    /**
+     * ボタンが押されたときに、空いている時間を調べて表示する
+     */
+    async function searchTimes() {
+      const date = document.getElementById('date').value;
+      const plan = document.getElementById('plan').value;
+      const people = document.getElementById('people').value;
+      const message = document.getElementById('message');
+      const list = document.getElementById('times');
+
+      list.innerHTML = '';
+
+      if (date === '') {
+        message.textContent = '日付を選んでください';
+        return;
+      }
+
+      message.textContent = '調べています…';
+
       try {
-        const res = await fetch(GAS_URL);        // Google Apps Scriptにデータを取りに行く
-        const data = await res.json();           // 返ってきたJSONを読み取る
-        if (!data.ok) throw new Error('サーバー側でエラーが起きました');
+        const url = GAS_URL + '?action=available&date=' + date + '&plan=' + plan + '&people=' + people;
+        const response = await fetch(url);
+        const data = await response.json();
 
-        const list = document.getElementById('settings');
-        for (const [key, value] of Object.entries(data.settings)) {
-          const li = document.createElement('li');
-          li.textContent = `${key}:${value}`;
-          list.appendChild(li);
+        if (!data.ok) {
+          message.textContent = 'エラー:' + data.error;
+          return;
         }
-        status.textContent = '設定を読み込みました';
-      } catch (err) {
-        status.textContent = '読み込みに失敗しました:' + err.message;
-        console.error(err);
+
+        if (data.times.length === 0) {
+          message.textContent = 'この日は予約できる時間がありません';
+          return;
+        }
+
+        message.textContent = '予約できる時間:' + data.times.length + '件';
+        for (const time of data.times) {
+          const item = document.createElement('li');
+          item.textContent = time;
+          list.appendChild(item);
+        }
+      } catch (error) {
+        message.textContent = '通信に失敗しました:' + error.message;
       }
     }
 
-    loadSettings();
+    document.getElementById('search').addEventListener('click', searchTimes);
   </script>
 </body>
 </html>
