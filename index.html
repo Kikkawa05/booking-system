@@ -3,18 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>予約システム(空き確認テスト)</title>
+  <title>予約システム(予約テスト)</title>
   <style>
     body { font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 16px; }
     label { display: block; margin-top: 12px; font-weight: bold; }
     input, select, button { font-size: 16px; padding: 8px; margin-top: 4px; width: 100%; box-sizing: border-box; }
     button { margin-top: 20px; }
-    #times li { padding: 4px 0; }
+    #times { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    #times button { margin-top: 0; }
+    #times button.selected { background: #1F5F8B; color: #fff; }
+    #reserveForm { margin-top: 24px; padding-top: 8px; border-top: 1px solid #ccc; }
+    #result { margin-top: 16px; font-weight: bold; }
   </style>
 </head>
 <body>
   <h1>予約システム</h1>
-  <p>空き確認のテスト画面です</p>
+  <p>予約のテスト画面です(テスト用の架空の名前・電話番号で試してください)</p>
 
   <label for="date">日付</label>
   <input type="date" id="date">
@@ -34,13 +38,39 @@
   <button id="search">空いている時間を調べる</button>
 
   <p id="message"></p>
-  <ul id="times"></ul>
+  <div id="times"></div>
+
+  <section id="reserveForm" hidden>
+    <p>選んだ時間:<span id="selectedTime"></span></p>
+
+    <label for="name">氏名</label>
+    <input type="text" id="name">
+
+    <label for="phone">電話番号</label>
+    <input type="tel" id="phone" placeholder="090-0000-0000">
+
+    <label for="gender">性別</label>
+    <select id="gender">
+      <option value="">選んでください</option>
+      <option value="男性">男性</option>
+      <option value="女性">女性</option>
+    </select>
+
+    <label for="age">年齢</label>
+    <input type="number" id="age" min="1" max="120">
+
+    <button id="reserve">この内容で予約する</button>
+  </section>
+
+  <p id="result"></p>
 
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycby0l6BnbrJd7gjl_6gYJ-whQloyQOdfKA3G5iIuOIcNEJ1oHuXpbEa7D40MnKpi-Anr/exec';
 
+    let selectedTime = '';
+
     /**
-     * ボタンが押されたときに、空いている時間を調べて表示する
+     * ボタンが押されたときに、空いている時間を調べて、時刻のボタンを並べる
      */
     async function searchTimes() {
       const date = document.getElementById('date').value;
@@ -50,6 +80,7 @@
       const list = document.getElementById('times');
 
       list.innerHTML = '';
+      hideForm();
 
       if (date === '') {
         message.textContent = '日付を選んでください';
@@ -73,18 +104,91 @@
           return;
         }
 
-        message.textContent = '予約できる時間:' + data.times.length + '件';
+        message.textContent = '予約できる時間:' + data.times.length + '件(時間を押して選んでください)';
         for (const time of data.times) {
-          const item = document.createElement('li');
-          item.textContent = time;
-          list.appendChild(item);
+          const button = document.createElement('button');
+          button.textContent = time;
+          button.addEventListener('click', () => selectTime(time, button));
+          list.appendChild(button);
         }
       } catch (error) {
         message.textContent = '通信に失敗しました:' + error.message;
       }
     }
 
+    /**
+     * 時刻のボタンが押されたときに、その時刻を選んで入力欄を出す
+     */
+    function selectTime(time, button) {
+      selectedTime = time;
+      for (const b of document.querySelectorAll('#times button')) {
+        b.classList.remove('selected');
+      }
+      button.classList.add('selected');
+      document.getElementById('selectedTime').textContent = time;
+      document.getElementById('reserveForm').hidden = false;
+      document.getElementById('result').textContent = '';
+    }
+
+    /**
+     * 入力欄を隠して、選んだ時刻を消す
+     */
+    function hideForm() {
+      selectedTime = '';
+      document.getElementById('reserveForm').hidden = true;
+    }
+
+    /**
+     * 「この内容で予約する」が押されたときに、予約をGoogle Apps Scriptに送る
+     */
+    async function reserve() {
+      const result = document.getElementById('result');
+      const data = {
+        action: 'reserve',
+        date: document.getElementById('date').value,
+        plan: document.getElementById('plan').value,
+        people: document.getElementById('people').value,
+        time: selectedTime,
+        name: document.getElementById('name').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        gender: document.getElementById('gender').value,
+        age: document.getElementById('age').value
+      };
+
+      if (data.name === '' || data.phone === '' || data.gender === '' || data.age === '') {
+        result.textContent = '氏名・電話番号・性別・年齢をすべて入力してください';
+        return;
+      }
+
+      const button = document.getElementById('reserve');
+      button.disabled = true;
+      result.textContent = '予約しています…';
+
+      try {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(data)
+        });
+        const answer = await response.json();
+
+        if (!answer.ok) {
+          result.textContent = '予約できませんでした:' + answer.error;
+          return;
+        }
+
+        result.textContent = '予約が完了しました。予約番号:' + answer.reservationNumber;
+        hideForm();
+        await searchTimes();
+      } catch (error) {
+        result.textContent = '通信に失敗しました:' + error.message;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
     document.getElementById('search').addEventListener('click', searchTimes);
+    document.getElementById('reserve').addEventListener('click', reserve);
   </script>
 </body>
 </html>
