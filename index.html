@@ -19,6 +19,7 @@
 <body>
   <h1>予約システム</h1>
   <p>予約のテスト画面です(テスト用の架空の名前・電話番号で試してください)</p>
+  <p id="lineStatus">LINEの情報を確認しています…</p>
 
   <label for="date">日付</label>
   <input type="date" id="date">
@@ -64,10 +65,37 @@
 
   <p id="result"></p>
 
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycby0l6BnbrJd7gjl_6gYJ-whQloyQOdfKA3G5iIuOIcNEJ1oHuXpbEa7D40MnKpi-Anr/exec';
+    const LIFF_ID = '2012030177-wT0vjxjH';
+    const GAS_URL = 'ここに今のGoogle Apps ScriptのURLを貼る';
 
     let selectedTime = '';
+    let lineUserId = '';
+    let lineName = '';
+
+    /**
+     * ページを開いたときに、LINEの機能を準備して、LINEのユーザーIDと名前を取る
+     * LINEの外(パソコンのブラウザなど)で開いたときは、LINEの情報なしで使える
+     */
+    async function initLine() {
+      const status = document.getElementById('lineStatus');
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isInClient() && !liff.isLoggedIn()) {
+          status.textContent = 'LINEの外で開いています(LINEの情報なしで予約します)';
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        lineUserId = profile.userId;
+        lineName = profile.displayName;
+        status.textContent = 'LINE:' + lineName + ' さん';
+      } catch (error) {
+        status.textContent = 'LINEの情報を取れませんでした:' + error.message;
+      }
+    }
 
     /**
      * ボタンが押されたときに、空いている時間を調べて、時刻のボタンを並べる
@@ -152,7 +180,9 @@
         name: document.getElementById('name').value.trim(),
         phone: document.getElementById('phone').value.trim(),
         gender: document.getElementById('gender').value,
-        age: document.getElementById('age').value
+        age: document.getElementById('age').value,
+        lineUserId: lineUserId,
+        lineName: lineName
       };
 
       if (data.name === '' || data.phone === '' || data.gender === '' || data.age === '') {
@@ -189,6 +219,7 @@
 
     document.getElementById('search').addEventListener('click', searchTimes);
     document.getElementById('reserve').addEventListener('click', reserve);
+    initLine();
   </script>
 </body>
 </html>
