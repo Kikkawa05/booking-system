@@ -228,13 +228,13 @@
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
   const LIFF_ID = '2012030177-wT0vjxjH';
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycby0l6BnbrJd7gjl_6gYJ-whQloyQOdfKA3G5iIuOIcNEJ1oHuXpbEa7D40MnKpi-Anr/exec';
+  const GAS_URL = 'ここに今のGoogle Apps ScriptのURLを貼る';
   const BOOKING_MONTHS = 3;
   const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
   const state = { plan: 'A', people: '1', date: '', time: '' };
   const calendar = { year: 0, month: 0 };
-  const openDaysCache = {};
+  const monthCache = {};
   const timesCache = {};
   let lineUserId = '';
   let lineName = '';
@@ -392,39 +392,55 @@
   }
 
   /**
-   * その月の予約を受け付ける日の一覧を返す。1度聞いた月は覚えておき、2回目からは聞かない
-   * 聞いている途中でもう一度呼ばれたら、同じ問い合わせの答えを待つ(二重に聞かない)
+   * 1か月分の「受け付ける日ごとの予約できる時刻」を返す(action=monthTimes)
+   * 例:{ '2026-11-02': { 'A-1': [...], 'A-2': [...], 'B-1': [...] }, ... }
+   * 1度聞いた月は覚えておく。聞いている途中でもう一度呼ばれたら、同じ問い合わせの答えを待つ
    */
-  function getOpenDays(key) {
-    if (!openDaysCache[key]) {
-      openDaysCache[key] = askGas({ action: 'openDays', month: key }).then(data => data.days);
-      openDaysCache[key].catch(() => delete openDaysCache[key]);
+  function getMonthData(key) {
+    if (!monthCache[key]) {
+      monthCache[key] = askGas({ action: 'monthTimes', month: key }).then(data => data.days);
+      monthCache[key].catch(() => delete monthCache[key]);
     }
-    return openDaysCache[key];
+    return monthCache[key];
   }
 
   /**
-   * ページを開いたときに、今月から予約できる期間の最後の月までの「選べる日」を先に聞いておく
-   * (カレンダーを開いたときに待たずに済むようにするため)
+   * その月の予約を受け付ける日の一覧を返す(1か月分のデータに入っている日)
    */
-  function prefetchOpenDays() {
+  async function getOpenDays(key) {
+    const days = await getMonthData(key);
+    return Object.keys(days);
+  }
+
+  /**
+   * ページを開いたときに、今月から予約できる期間の最後の月までの1か月分のデータを先に聞いておく
+   * (カレンダーを開いたときも、日にちを選んだときも、待たずに済むようにするため)
+   */
+  function prefetchMonths() {
     const now = new Date();
     for (let i = 0; i <= BOOKING_MONTHS; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      getOpenDays(monthKey(d.getFullYear(), d.getMonth() + 1)).catch(() => {});
+      getMonthData(monthKey(d.getFullYear(), d.getMonth() + 1)).catch(() => {});
     }
   }
 
   /**
-   * その日の、プランと人数のすべての組み合わせの予約できる時刻を返す(action=availableAll)
-   * 1度聞いた日は覚えておき、プランや人数を変えても聞き直さない
+   * その日の、プランと人数のすべての組み合わせの予約できる時刻を返す
+   * 聞き直した答え(timesCache)があればそれを、なければ1か月分のデータから取り出す
    */
-  function getTimesAll(dayText) {
-    if (!timesCache[dayText]) {
-      timesCache[dayText] = askGas({ action: 'availableAll', date: dayText }).then(data => data.times);
-      timesCache[dayText].catch(() => delete timesCache[dayText]);
-    }
-    return timesCache[dayText];
+  async function getTimesAll(dayText) {
+    if (timesCache[dayText]) return timesCache[dayText];
+    const days = await getMonthData(dayText.slice(0, 7));
+    return days[dayText] || {};
+  }
+
+  /**
+   * その日の予約できる時刻を、Google Apps Scriptに聞き直す(action=availableAll)
+   * 入力の画面から戻ったときなど、時間がたって空きが変わったかもしれないときに使う
+   */
+  function refreshTimes(dayText) {
+    timesCache[dayText] = askGas({ action: 'availableAll', date: dayText }).then(data => data.times);
+    timesCache[dayText].catch(() => delete timesCache[dayText]);
   }
 
   /**
@@ -472,7 +488,7 @@
       return;
     }
 
-    if (!timesCache[state.date]) message.textContent = '調べています…';
+    message.textContent = '調べています…';
     const request = ++timesRequest;
     let times;
     try {
@@ -541,7 +557,7 @@
   function backToSelect() {
     document.getElementById('g2').hidden = true;
     document.getElementById('g1').hidden = false;
-    delete timesCache[state.date];
+    refreshTimes(state.date);
     loadTimes();
   }
 
@@ -613,7 +629,7 @@
   document.getElementById('reserve').addEventListener('click', reserve);
 
   updatePlan();
-  prefetchOpenDays();
+  prefetchMonths();
   initLine();
 </script>
 </body>
