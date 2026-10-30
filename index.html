@@ -158,6 +158,11 @@
     .confirm-item dd i.fa-user-tie { color: var(--blue); }
     .status { color: var(--gray-text); text-align: center; margin: 16px 0 0; }
 
+    .gate { text-align: center; padding-top: 24px; }
+    .gate .fa-line { font-size: 64px; color: #06C755; }
+    .gate h2 { font-size: 20px; font-weight: 400; margin: 16px 0; }
+    .gate p { font-size: 15px; text-align: left; }
+
     .done-mark {
       width: 64px; height: 64px; margin: 8px auto 16px; border-radius: 50%; background: var(--pink);
       color: #FFFFFF; font-size: 30px; display: flex; align-items: center; justify-content: center;
@@ -176,6 +181,14 @@
 </head>
 <body>
 <main>
+  <section id="gate" class="gate" hidden>
+    <i class="fa-brands fa-line" aria-hidden="true"></i>
+    <h2>ご予約には、LINE公式アカウントの<br>友だち追加が必要です</h2>
+    <p>友だち追加をすると、ご予約の確定と前日のお知らせがLINEで届きます。</p>
+    <button type="button" class="main-button" id="addFriendButton">友だち追加する</button>
+    <p class="status" id="gateStatus" role="status"></p>
+  </section>
+
   <section id="g1">
     <ol class="steps" aria-label="予約の手順">
       <li class="step now"><div class="dot">1</div>予約内容の選択</li>
@@ -338,7 +351,7 @@
       <div class="summary icons" id="doneSummary"></div>
       <div class="notice">
         <i class="fa-brands fa-line" aria-hidden="true"></i>
-        <p>LINEに確定のお知らせを送りました。<br>前日19時にもLINEでお知らせします。</p>
+        <p id="lineNotice">LINEに確定のお知らせを送りました。<br>前日19時にもLINEでお知らせします。</p>
       </div>
       <div class="notice">
         <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
@@ -374,17 +387,53 @@
 
   /**
    * ページを開いたときに、LINEの機能を準備して、LINEのユーザーIDと名前を取る
-   * LINEの外(パソコンのブラウザなど)で開いたときは、LINEの情報なしで使える
+   * LINEの外(パソコンのブラウザなど)で開いたときは、LINEでログインしてもらってから使う
    */
   async function initLine() {
     try {
       await liff.init({ liffId: LIFF_ID });
-      if (!liff.isInClient() && !liff.isLoggedIn()) return;
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: location.href });
+        return;
+      }
       const profile = await liff.getProfile();
       lineUserId = profile.userId;
       lineName = profile.displayName;
+      if (!(await isFriend())) showScreen('gate');
     } catch (error) {
       console.log('LINEの情報を取れませんでした:' + error.message);
+    }
+  }
+
+  /**
+   * LINE公式アカウントと友だちかどうかを調べる
+   * 調べられなかったとき(設定がないなど)は、予約を止めないように true を返す
+   */
+  async function isFriend() {
+    try {
+      const friendship = await liff.getFriendship();
+      return friendship.friendFlag;
+    } catch (error) {
+      console.log('友だちかどうかを調べられませんでした:' + error.message);
+      return true;
+    }
+  }
+
+  /**
+   * 「友だち追加する」を押したときに、友だち追加の画面を出し、友だちになったら予約の画面へ進む
+   */
+  async function addFriend() {
+    const status = document.getElementById('gateStatus');
+    status.textContent = '';
+    try {
+      await liff.requestFriendship();
+    } catch (error) {
+      console.log('友だち追加の画面を出せませんでした:' + error.message);
+    }
+    if (await isFriend()) {
+      showScreen('g1');
+    } else {
+      status.textContent = '友だち追加が確認できませんでした。もう一度お試しください';
     }
   }
 
@@ -491,9 +540,9 @@
     message.textContent = '読み込んでいます…';
 
     const key = monthKey(year, month);
-    let openDays;
+    let monthDays;
     try {
-      openDays = await getOpenDays(key);
+      monthDays = await getMonthData(key);
     } catch (error) {
       message.textContent = '通信に失敗しました。しばらくしてからもう一度お試しください';
       return;
@@ -516,7 +565,7 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = d;
-      button.disabled = !openDays.includes(dayText);
+      button.disabled = !hasTimes(monthDays[dayText]);
       button.classList.toggle('selected', dayText === state.date);
       button.addEventListener('click', () => selectDate(dayText));
       grid.appendChild(button);
@@ -537,11 +586,18 @@
   }
 
   /**
-   * その月の予約を受け付ける日の一覧を返す(1か月分のデータに入っている日)
+   * その日に、今選んでいるプランと人数で予約できる時刻が1つでもあれば true を返す
+   * (受け付けない日は dayTimes が undefined なので false)
    */
-  async function getOpenDays(key) {
-    const days = await getMonthData(key);
-    return Object.keys(days);
+  function hasTimes(dayTimes) {
+    return Boolean(dayTimes && (dayTimes[state.plan + '-' + state.people] || []).length > 0);
+  }
+
+  /**
+   * カレンダーが開いていれば描き直す(プランや人数を変えて、灰色の日が変わったとき)
+   */
+  function refreshCalendar() {
+    if (!document.getElementById('calendarPanel').hidden) showMonth(calendar.year, calendar.month);
   }
 
   /**
@@ -672,10 +728,10 @@
   }
 
   /**
-   * 表示する画面を1つだけにする('g1'・'g2'・'g3' のどれか)。画面のいちばん上に戻る
+   * 表示する画面を1つだけにする('gate'・'g1'・'g2'・'g3' のどれか)。画面のいちばん上に戻る
    */
   function showScreen(id) {
-    for (const screen of ['g1', 'g2', 'g3']) {
+    for (const screen of ['gate', 'g1', 'g2', 'g3']) {
       document.getElementById(screen).hidden = screen !== id;
     }
     window.scrollTo(0, 0);
@@ -886,6 +942,15 @@
       lineName: lineName
     };
 
+    if (lineUserId === '') {
+      status.textContent = 'LINEの情報を確認できませんでした。お手数ですが、LINEからもう一度開いてください';
+      return;
+    }
+    if (!(await isFriend())) {
+      showScreen('gate');
+      return;
+    }
+
     button.disabled = true;
     status.textContent = '予約しています…';
     let answer;
@@ -904,7 +969,7 @@
     button.disabled = false;
 
     if (answer.ok) {
-      showDone();
+      showDone(answer.lineSent);
     } else if (String(answer.error).includes('埋まってしまいました')) {
       showFull();
     } else {
@@ -913,10 +978,13 @@
   }
 
   /**
-   * G3(予約できたとき)を出す
+   * G3(予約できたとき)を出す。LINEの確定連絡を送れなかったときは、お知らせの文を変える
    */
-  function showDone() {
+  function showDone(lineSent) {
     const isCafe = state.plan === 'A';
+    document.getElementById('lineNotice').innerHTML = lineSent
+      ? 'LINEに確定のお知らせを送りました。<br>前日19時にもLINEでお知らせします。'
+      : 'LINEでのお知らせを送れませんでした。<br>ご予約は確定しています。この画面で内容をご確認ください。';
     document.getElementById('doneMark').classList.toggle('soudan', !isCafe);
     document.getElementById('doneImage').src = planImage();
     renderSummary('doneSummary', true);
@@ -957,6 +1025,7 @@
     input.addEventListener('change', () => {
       state.plan = input.value;
       updatePlan();
+      refreshCalendar();
       if (state.date !== '') loadTimes();
     });
   }
@@ -964,6 +1033,7 @@
     input.addEventListener('change', () => {
       state.people = input.value;
       updatePeople();
+      refreshCalendar();
       if (state.date !== '') loadTimes();
     });
   }
@@ -993,6 +1063,7 @@
   document.getElementById('reserveButton').addEventListener('click', reserve);
   document.getElementById('reselectButton').addEventListener('click', reselect);
   document.getElementById('closeButton').addEventListener('click', closeApp);
+  document.getElementById('addFriendButton').addEventListener('click', addFriend);
 
   updatePlan();
   buildAgeList();
