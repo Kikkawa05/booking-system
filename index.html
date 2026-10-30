@@ -46,16 +46,17 @@
 
     h2 { font-size: 17px; font-weight: 400; margin: 24px 0 10px; }
 
+    .plans { display: grid; grid-auto-rows: 1fr; gap: 12px; }
     .plan-card {
       display: flex; align-items: center; gap: 8px;
-      padding: 12px 10px; margin-bottom: 12px;
+      padding: 12px 10px;
       border: 2px solid var(--gray); border-radius: 12px; background: #FFFFFF; cursor: pointer;
     }
-    .plan-card img { width: 80px; height: 56px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .plan-card img { width: 96px; height: 80px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
     .plan-card .plan-text { flex: 1; min-width: 0; display: block; }
     .plan-card .plan-name { display: block; font-size: 16px; white-space: nowrap; }
     .plan-card .plan-time { display: block; text-align: right; font-size: 13px; line-height: 1.4; }
-    .plan-card .plan-desc { display: block; font-size: 12px; margin-top: 4px; line-height: 1.5; }
+    .plan-card .plan-desc { display: block; font-size: 12px; margin-top: 4px; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
     .plan-card input { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--pink); }
     .plan-card.cafe.selected { border-color: var(--pink); background: var(--pink-light); }
     .plan-card.soudan.selected { border-color: var(--blue); background: var(--blue-light); }
@@ -132,24 +133,26 @@
          alt="はじめまして。シアワセニナリタイカフェです。あなたの思い描く幸せへの第一歩を、カフェから。">
 
     <h2>プランを選ぶ</h2>
+    <div class="plans">
     <label class="plan-card cafe" id="planCardA">
       <input type="radio" name="plan" value="A" checked>
-      <img src="images/plan-cafe.webp" width="720" height="480" alt="">
+      <img src="images/thumb-cafe.webp" width="288" height="240" alt="">
       <span class="plan-text">
         <span class="plan-name">カフェ+初回相談</span>
         <span class="plan-time">135分<br>(60分+75分)</span>
-        <span class="plan-desc">カフェでくつろぎながら<br>理想の結婚相手を探してみましょう</span>
+        <span class="plan-desc">カフェで<wbr>くつろぎながら<wbr>理想の<wbr>結婚相手を<wbr>探して<wbr>みましょう</span>
       </span>
     </label>
     <label class="plan-card soudan" id="planCardB">
       <input type="radio" name="plan" value="B">
-      <img src="images/plan-soudan.webp" width="720" height="480" alt="">
+      <img src="images/thumb-soudan.webp" width="288" height="240" alt="">
       <span class="plan-text">
         <span class="plan-name">ご相談</span>
         <span class="plan-time">90分</span>
-        <span class="plan-desc">落ち着いた空間で結婚や<br>出会いについてじっくりお話します</span>
+        <span class="plan-desc">落ち着いた<wbr>空間で<wbr>結婚や<wbr>出会いについて<wbr>じっくり<wbr>お話します</span>
       </span>
     </label>
+    </div>
 
     <h2>人数を選ぶ</h2>
     <div class="people">
@@ -232,6 +235,7 @@
   const state = { plan: 'A', people: '1', date: '', time: '' };
   const calendar = { year: 0, month: 0 };
   const openDaysCache = {};
+  const timesCache = {};
   let lineUserId = '';
   let lineName = '';
   let timesRequest = 0;
@@ -355,11 +359,9 @@
     message.textContent = '読み込んでいます…';
 
     const key = monthKey(year, month);
+    let openDays;
     try {
-      if (!openDaysCache[key]) {
-        const data = await askGas({ action: 'openDays', month: key });
-        openDaysCache[key] = data.days;
-      }
+      openDays = await getOpenDays(key);
     } catch (error) {
       message.textContent = '通信に失敗しました。しばらくしてからもう一度お試しください';
       return;
@@ -382,11 +384,47 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = d;
-      button.disabled = !openDaysCache[key].includes(dayText);
+      button.disabled = !openDays.includes(dayText);
       button.classList.toggle('selected', dayText === state.date);
       button.addEventListener('click', () => selectDate(dayText));
       grid.appendChild(button);
     }
+  }
+
+  /**
+   * その月の予約を受け付ける日の一覧を返す。1度聞いた月は覚えておき、2回目からは聞かない
+   * 聞いている途中でもう一度呼ばれたら、同じ問い合わせの答えを待つ(二重に聞かない)
+   */
+  function getOpenDays(key) {
+    if (!openDaysCache[key]) {
+      openDaysCache[key] = askGas({ action: 'openDays', month: key }).then(data => data.days);
+      openDaysCache[key].catch(() => delete openDaysCache[key]);
+    }
+    return openDaysCache[key];
+  }
+
+  /**
+   * ページを開いたときに、今月から予約できる期間の最後の月までの「選べる日」を先に聞いておく
+   * (カレンダーを開いたときに待たずに済むようにするため)
+   */
+  function prefetchOpenDays() {
+    const now = new Date();
+    for (let i = 0; i <= BOOKING_MONTHS; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      getOpenDays(monthKey(d.getFullYear(), d.getMonth() + 1)).catch(() => {});
+    }
+  }
+
+  /**
+   * その日の、プランと人数のすべての組み合わせの予約できる時刻を返す(action=availableAll)
+   * 1度聞いた日は覚えておき、プランや人数を変えても聞き直さない
+   */
+  function getTimesAll(dayText) {
+    if (!timesCache[dayText]) {
+      timesCache[dayText] = askGas({ action: 'availableAll', date: dayText }).then(data => data.times);
+      timesCache[dayText].catch(() => delete timesCache[dayText]);
+    }
+    return timesCache[dayText];
   }
 
   /**
@@ -434,12 +472,12 @@
       return;
     }
 
-    message.textContent = '調べています…';
+    if (!timesCache[state.date]) message.textContent = '調べています…';
     const request = ++timesRequest;
     let times;
     try {
-      const data = await askGas({ action: 'available', date: state.date, plan: state.plan, people: state.people });
-      times = data.times;
+      const all = await getTimesAll(state.date);
+      times = all[state.plan + '-' + state.people] || [];
     } catch (error) {
       if (request !== timesRequest) return;
       message.textContent = '通信に失敗しました。しばらくしてからもう一度お試しください';
@@ -503,6 +541,7 @@
   function backToSelect() {
     document.getElementById('g2').hidden = true;
     document.getElementById('g1').hidden = false;
+    delete timesCache[state.date];
     loadTimes();
   }
 
@@ -574,6 +613,7 @@
   document.getElementById('reserve').addEventListener('click', reserve);
 
   updatePlan();
+  prefetchOpenDays();
   initLine();
 </script>
 </body>
