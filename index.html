@@ -41,6 +41,9 @@
     }
     .step.now .dot { background: var(--pink); color: #FFFFFF; }
     .step.done .dot { background: #FFB8C8; color: #FFFFFF; }
+    .steps.now2::after { content: ''; position: absolute; top: 18px; left: 18%; width: 32%; height: 3px; background: #FFB8C8; }
+    .steps.now3::after { content: ''; position: absolute; top: 18px; left: 18%; width: 64%; height: 3px; background: #FFB8C8; }
+    .step .dot { position: relative; z-index: 1; }
 
     .visual { display: block; width: 100%; height: auto; margin-bottom: 16px; }
 
@@ -114,9 +117,60 @@
       background: #FFFFFF; color: var(--pink); font-weight: 700; cursor: pointer;
     }
 
-    .temp label { display: block; margin-top: 12px; }
-    .temp input, .temp select { width: 100%; font-size: 16px; padding: 8px; margin-top: 4px; }
-    #result { margin-top: 16px; font-weight: 700; }
+    .page-title { font-size: 22px; font-weight: 400; margin: 0 0 8px; }
+    .field-label { display: flex; align-items: center; gap: 8px; font-size: 17px; margin: 20px 0 8px; }
+    .required { font-size: 12px; color: #FFFFFF; background: var(--pink); border-radius: 4px; padding: 0 8px; }
+    .text-input {
+      width: 100%; min-height: 48px; padding: 8px 16px; font-size: 16px; font-family: inherit;
+      border: 2px solid var(--gray); border-radius: 12px; background: #FFFFFF;
+    }
+    .text-input::placeholder { color: var(--gray-text); }
+    .error { color: #D9233F; font-size: 14px; margin: 6px 0 0; }
+    .gender { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .gender .choice.female i { color: var(--pink); }
+    .gender .choice.male i { color: var(--blue); }
+    .gender .choice.male.selected { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+    .age-list { max-height: 240px; overflow-y: auto; position: relative; padding: 8px 12px 12px; }
+    .age-list button {
+      display: block; width: 100%; min-height: 44px; border: none; border-bottom: 1px solid var(--gray);
+      background: #FFFFFF; text-align: left; padding: 0 8px; cursor: pointer;
+    }
+    .age-list button.selected { color: var(--pink); font-weight: 700; }
+    .consent { background: #EBEBEB; border-radius: 12px; padding: 16px; font-size: 14px; }
+    .consent p { margin: 0 0 12px; }
+    .consent label { display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 16px; cursor: pointer; }
+    .consent input { width: 20px; height: 20px; accent-color: var(--pink); }
+
+    .summary { border: 2px solid var(--pink); background: var(--pink-light); border-radius: 12px; padding: 16px; margin-top: 28px; }
+    .summary.soudan { border-color: var(--blue); background: var(--blue-light); }
+    .summary h3 { font-size: 17px; font-weight: 400; margin: 0 0 12px; }
+    .summary dl { display: grid; grid-template-columns: 6em 1fr; row-gap: 10px; margin: 0 0 16px; padding-left: 16px; font-size: 15px; }
+    .summary dt, .summary dd { margin: 0; }
+    .summary img { display: block; width: 100%; height: auto; background: #FFFFFF; }
+    .summary.icons dl { grid-template-columns: 2em 5em 1fr; padding-left: 0; margin-bottom: 0; align-items: center; }
+    .summary.icons i { color: var(--pink); font-size: 18px; }
+    .summary.icons.soudan i { color: var(--blue); }
+
+    .confirm-item { margin: 18px 0 0; }
+    .confirm-item dt { font-weight: 700; font-size: 16px; }
+    .confirm-item dd { margin: 8px 0 0 16px; font-size: 16px; }
+    .confirm-item dd i { color: var(--pink); margin-right: 8px; }
+    .confirm-item dd i.fa-user-tie { color: var(--blue); }
+    .status { color: var(--gray-text); text-align: center; margin: 16px 0 0; }
+
+    .done-mark {
+      width: 64px; height: 64px; margin: 8px auto 16px; border-radius: 50%; background: var(--pink);
+      color: #FFFFFF; font-size: 30px; display: flex; align-items: center; justify-content: center;
+    }
+    .done-mark.soudan { background: var(--blue); }
+    .done-mark.full { background: var(--gray-text); }
+    .done-title { text-align: center; font-size: 22px; font-weight: 400; margin: 0 0 16px; }
+    .done-image { display: block; width: 80%; height: auto; margin: 0 auto; }
+    .notice { display: flex; align-items: center; gap: 16px; background: #EBEBEB; border-radius: 12px; padding: 16px; margin-top: 20px; font-size: 15px; }
+    .notice i { font-size: 36px; flex-shrink: 0; }
+    .notice .fa-line { color: #06C755; }
+    .notice .fa-circle-info { color: var(--pink); }
+    .notice p { margin: 0; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   </style>
 </head>
@@ -199,36 +253,113 @@
     </button>
   </section>
 
-  <section id="g2" class="temp" hidden>
-    <h2>お客様情報の入力(仮の画面。次に作り直す)</h2>
-    <p id="summary"></p>
+  <section id="g2" hidden>
+    <ol class="steps now2" aria-label="予約の手順">
+      <li class="step done"><div class="dot"><i class="fa-solid fa-check" aria-hidden="true"></i></div>予約内容の選択</li>
+      <li class="step now"><div class="dot">2</div><span id="step2Label">お客様情報の入力</span></li>
+      <li class="step"><div class="dot">3</div>予約完了</li>
+    </ol>
 
-    <label for="name">お名前</label>
-    <input type="text" id="name" placeholder="例)山田 花子">
+    <div id="inputView">
+      <h2 class="page-title">お客様情報の入力</h2>
 
-    <label for="phone">電話番号</label>
-    <input type="tel" id="phone" placeholder="例)090-0000-0000">
+      <label class="field-label" for="name">お名前<span class="required">必須</span></label>
+      <input class="text-input" type="text" id="name" autocomplete="name" placeholder="例)山田 花子">
+      <p class="error" id="nameError" hidden></p>
 
-    <label for="gender">性別</label>
-    <select id="gender">
-      <option value="">選んでください</option>
-      <option value="女性">女性</option>
-      <option value="男性">男性</option>
-    </select>
+      <label class="field-label" for="phone">電話番号<span class="required">必須</span></label>
+      <input class="text-input" type="tel" id="phone" autocomplete="tel" inputmode="tel" placeholder="例)090-0000-0000">
+      <p class="error" id="phoneError" hidden></p>
 
-    <label for="age">年齢</label>
-    <input type="number" id="age" min="1" max="120">
+      <div class="field-label" id="genderLabel">性別<span class="required">必須</span></div>
+      <div class="gender" role="radiogroup" aria-labelledby="genderLabel">
+        <label class="choice female" id="genderFemale">
+          <input class="visually-hidden" type="radio" name="gender" value="女性">
+          <i class="fa-solid fa-user" aria-hidden="true"></i>女性
+        </label>
+        <label class="choice male" id="genderMale">
+          <input class="visually-hidden" type="radio" name="gender" value="男性">
+          <i class="fa-solid fa-user-tie" aria-hidden="true"></i>男性
+        </label>
+      </div>
+      <p class="error" id="genderError" hidden></p>
 
-    <button type="button" class="main-button" id="reserve">この内容で予約する</button>
-    <button type="button" class="sub-button" id="backButton">戻る</button>
-    <p id="result"></p>
+      <div class="field-label" id="ageLabel">年齢<span class="required">必須</span></div>
+      <button type="button" class="picker" id="agePicker" aria-expanded="false" aria-controls="agePanel" aria-labelledby="ageLabel ageValue">
+        <span class="value empty" id="ageValue">選択してください</span>
+        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+      </button>
+      <div class="panel" id="agePanel" hidden>
+        <div class="age-list" id="ageList" role="listbox" aria-labelledby="ageLabel"></div>
+      </div>
+      <p class="error" id="ageError" hidden></p>
+
+      <div class="field-label">個人情報の取り扱いについて<span class="required">必須</span></div>
+      <div class="consent">
+        <p>ご入力いただいた情報とLINEのお名前・ユーザーIDは、ご予約の受付、ご予約内容のご連絡、当店からのサービスのご案内のために使用します。ご案内が不要な場合は、LINEのトークでお知らせください。法令にもとづく場合を除き、ご本人の同意なく第三者に提供することはありません。</p>
+        <label><input type="checkbox" id="consent">上記内容に同意する</label>
+      </div>
+
+      <div class="summary" id="inputSummary"></div>
+
+      <button type="button" class="main-button" id="confirmButton" disabled>確認する</button>
+      <button type="button" class="sub-button" id="backButton"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> 戻る</button>
+    </div>
+
+    <div id="confirmView" hidden>
+      <h2 class="page-title">お客様情報の確認</h2>
+      <dl>
+        <div class="confirm-item"><dt>お名前</dt><dd id="confirmName"></dd></div>
+        <div class="confirm-item"><dt>電話番号</dt><dd id="confirmPhone"></dd></div>
+        <div class="confirm-item"><dt>性別</dt><dd id="confirmGender"></dd></div>
+        <div class="confirm-item"><dt>年齢</dt><dd id="confirmAge"></dd></div>
+        <div class="confirm-item"><dt>個人情報の取り扱いについて</dt><dd>同意済み</dd></div>
+      </dl>
+
+      <div class="summary" id="confirmSummary"></div>
+
+      <button type="button" class="main-button" id="reserveButton">この内容で予約する<i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+      <p class="status" id="reserveStatus" role="status"></p>
+      <button type="button" class="sub-button" id="editButton">修正する</button>
+    </div>
+  </section>
+
+  <section id="g3" hidden>
+    <ol class="steps now3" aria-label="予約の手順">
+      <li class="step done"><div class="dot"><i class="fa-solid fa-check" aria-hidden="true"></i></div>予約内容の選択</li>
+      <li class="step done"><div class="dot"><i class="fa-solid fa-check" aria-hidden="true"></i></div>お客様情報の入力・確認</li>
+      <li class="step now"><div class="dot">3</div>予約完了</li>
+    </ol>
+
+    <div id="doneView">
+      <div class="done-mark" id="doneMark"><i class="fa-solid fa-check" aria-hidden="true"></i></div>
+      <h2 class="done-title">ご予約が完了しました</h2>
+      <img class="done-image" id="doneImage" src="images/plan-cafe.webp" width="720" height="480" alt="">
+      <div class="summary icons" id="doneSummary"></div>
+      <div class="notice">
+        <i class="fa-brands fa-line" aria-hidden="true"></i>
+        <p>LINEに確定のお知らせを送りました。<br>前日19時にもLINEでお知らせします。</p>
+      </div>
+      <div class="notice">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        <p>キャンセルや日時の変更は、<br>LINEのトークでお知らせください。</p>
+      </div>
+      <button type="button" class="sub-button" id="closeButton">閉じる</button>
+    </div>
+
+    <div id="fullView" hidden>
+      <div class="done-mark full"><i class="fa-solid fa-exclamation" aria-hidden="true"></i></div>
+      <h2 class="done-title">ご予約できませんでした</h2>
+      <p>選んだ時間は、ほかの予約で埋まってしまいました。別の時間を選んでください。</p>
+      <button type="button" class="main-button" id="reselectButton">日時を選び直す</button>
+    </div>
   </section>
 </main>
 
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
   const LIFF_ID = '2012030177-wT0vjxjH';
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycby0l6BnbrJd7gjl_6gYJ-whQloyQOdfKA3G5iIuOIcNEJ1oHuXpbEa7D40MnKpi-Anr/exec';
+  const GAS_URL = 'ここに今のGoogle Apps ScriptのURLを貼る';
   const BOOKING_MONTHS = 3;
   const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -239,6 +370,7 @@
   let lineUserId = '';
   let lineName = '';
   let timesRequest = 0;
+  const input = { name: '', phone: '', gender: '', age: 0 };
 
   /**
    * ページを開いたときに、LINEの機能を準備して、LINEのユーザーIDと名前を取る
@@ -540,66 +672,284 @@
   }
 
   /**
-   * 「次へ」を押したときに、G1を隠して入力の画面(仮)を出す
+   * 表示する画面を1つだけにする('g1'・'g2'・'g3' のどれか)。画面のいちばん上に戻る
    */
-  function goToInput() {
-    const planName = state.plan === 'A' ? 'カフェ+初回相談' : 'ご相談';
-    document.getElementById('summary').textContent =
-      planName + '/' + state.people + '名/' + formatDate(state.date) + ' ' + state.time + '〜';
-    document.getElementById('g1').hidden = true;
-    document.getElementById('g2').hidden = false;
+  function showScreen(id) {
+    for (const screen of ['g1', 'g2', 'g3']) {
+      document.getElementById(screen).hidden = screen !== id;
+    }
     window.scrollTo(0, 0);
   }
 
   /**
-   * 入力の画面(仮)から、G1に戻る(選んだ内容は残す)
+   * G2の中で、入力の表示と確認の表示を切り替える(ステップ表示の言葉も変える)
+   */
+  function showInputView(confirm) {
+    document.getElementById('inputView').hidden = confirm;
+    document.getElementById('confirmView').hidden = !confirm;
+    document.getElementById('step2Label').textContent = confirm ? 'お客様情報の確認' : 'お客様情報の入力';
+    window.scrollTo(0, 0);
+  }
+
+  /**
+   * 「ご予約内容」の枠を作る。withIcons が true ならG3用(アイコン付き・画像なし)
+   */
+  function renderSummary(elementId, withIcons) {
+    const box = document.getElementById(elementId);
+    const isCafe = state.plan === 'A';
+    box.classList.toggle('soudan', !isCafe);
+    const planText = isCafe ? 'カフェ+初回相談<br>(パンケーキ+ドリンク付き)' : 'ご相談(90分)';
+    const rows = [
+      ['プラン', planText, isCafe ? 'fa-solid fa-mug-hot' : 'fa-regular fa-comments'],
+      ['人数', state.people + '名', 'fa-solid fa-user'],
+      ['日にち', formatDate(state.date), 'fa-regular fa-calendar-days'],
+      ['時間', state.time + '〜', 'fa-regular fa-clock']
+    ];
+    let html = '<h3>ご予約内容</h3><dl>';
+    for (const [label, value, icon] of rows) {
+      if (withIcons) html += '<i class="' + icon + '" aria-hidden="true"></i>';
+      html += '<dt>' + label + '</dt><dd>' + value + '</dd>';
+    }
+    html += '</dl>';
+    if (!withIcons) html += '<img src="' + planImage() + '" width="720" height="480" alt="">';
+    box.innerHTML = html;
+  }
+
+  /**
+   * 選んだプランの大きい画像のファイル名を返す
+   */
+  function planImage() {
+    return state.plan === 'A' ? 'images/plan-cafe.webp' : 'images/plan-soudan.webp';
+  }
+
+  /**
+   * 「次へ」を押したときに、G2(入力の表示)を出す
+   */
+  function goToInput() {
+    renderSummary('inputSummary', false);
+    showInputView(false);
+    showScreen('g2');
+  }
+
+  /**
+   * G2の「戻る」を押したときに、G1に戻る(選んだ内容と入力した内容は残し、その日の時刻は聞き直す)
    */
   function backToSelect() {
-    document.getElementById('g2').hidden = true;
-    document.getElementById('g1').hidden = false;
+    showScreen('g1');
     refreshTimes(state.date);
     loadTimes();
   }
 
   /**
-   * 「この内容で予約する」が押されたときに、予約をGoogle Apps Scriptに送る(仮の画面用)
+   * 名前の表記をそろえる(前後のスペースを消し、間のスペースは全角1つにまとめる)
+   * Google Apps Script の normalizeName と同じ。確認の表示に、そろえたあとの形を出すために使う
+   */
+  function normalizeName(text) {
+    return text.trim().replace(/\s+/g, '　');
+  }
+
+  /**
+   * 電話番号の表記をそろえる(全角の数字を半角にし、数字以外を消す)
+   * Google Apps Script の normalizePhone と同じ
+   */
+  function normalizePhone(text) {
+    return text
+      .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+      .replace(/[^0-9]/g, '');
+  }
+
+  /**
+   * 数字だけの電話番号を、確認の表示用に読みやすくする(携帯電話の11桁なら 090-0000-0000 の形)
+   */
+  function formatPhone(digits) {
+    if (/^0[789]0\d{8}$/.test(digits)) {
+      return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+    }
+    return digits;
+  }
+
+  /**
+   * 年齢のリスト(1〜120)を作る。最初に1回だけ呼ぶ
+   */
+  function buildAgeList() {
+    const list = document.getElementById('ageList');
+    for (let age = 1; age <= 120; age++) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = age + '歳';
+      button.dataset.age = age;
+      button.setAttribute('role', 'option');
+      button.addEventListener('click', () => selectAge(age));
+      list.appendChild(button);
+    }
+  }
+
+  /**
+   * 年齢のリストを開く・閉じる。開くときは、選んだ年齢(まだなら25歳)がいちばん上に来るようにする
+   */
+  function toggleAge() {
+    const open = document.getElementById('agePanel').hidden;
+    setPanel('agePicker', 'agePanel', open);
+    if (!open) return;
+    const list = document.getElementById('ageList');
+    const target = list.querySelector('[data-age="' + (input.age || 25) + '"]');
+    list.scrollTop = target.offsetTop - list.firstElementChild.offsetTop;
+  }
+
+  /**
+   * 年齢を選んだときに、表示してリストを閉じる
+   */
+  function selectAge(age) {
+    input.age = age;
+    const value = document.getElementById('ageValue');
+    value.textContent = age + '歳';
+    value.classList.remove('empty');
+    for (const b of document.getElementById('ageList').children) {
+      b.classList.toggle('selected', Number(b.dataset.age) === age);
+      b.setAttribute('aria-selected', String(Number(b.dataset.age) === age));
+    }
+    setPanel('agePicker', 'agePanel', false);
+    showError('ageError', '');
+  }
+
+  /**
+   * 性別を選んだときの見た目を変える
+   */
+  function updateGender() {
+    document.getElementById('genderFemale').classList.toggle('selected', input.gender === '女性');
+    document.getElementById('genderMale').classList.toggle('selected', input.gender === '男性');
+    showError('genderError', '');
+  }
+
+  /**
+   * 項目のすぐ下にエラーの文を出す(空の文字なら消す)
+   */
+  function showError(id, text) {
+    const error = document.getElementById(id);
+    error.textContent = text;
+    error.hidden = text === '';
+  }
+
+  /**
+   * 「確認する」を押したときに、入力を調べる。間違いがなければ確認の表示にする
+   * 間違いがあれば、その項目の下に文を出し、最初の間違いの場所までスクロールする
+   */
+  function goToConfirm() {
+    input.name = normalizeName(document.getElementById('name').value);
+    input.phone = normalizePhone(document.getElementById('phone').value);
+
+    const errors = [
+      ['nameError', input.name === '' ? 'お名前を入力してください' : ''],
+      ['phoneError', input.phone === '' ? '電話番号を入力してください'
+        : !/^0\d{9,10}$/.test(input.phone) ? '電話番号を確かめてください(0から始まる10桁か11桁の番号)' : ''],
+      ['genderError', input.gender === '' ? '性別を選択してください' : ''],
+      ['ageError', input.age === 0 ? '年齢を選択してください' : '']
+    ];
+    let first = null;
+    for (const [id, text] of errors) {
+      showError(id, text);
+      if (text !== '' && first === null) first = id;
+    }
+    if (first !== null) {
+      document.getElementById(first).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    document.getElementById('confirmName').textContent = input.name;
+    document.getElementById('confirmPhone').textContent = formatPhone(input.phone);
+    const genderIcon = input.gender === '女性' ? 'fa-user' : 'fa-user-tie';
+    document.getElementById('confirmGender').innerHTML = '<i class="fa-solid ' + genderIcon + '" aria-hidden="true"></i>' + input.gender;
+    document.getElementById('confirmAge').textContent = input.age + '歳';
+    renderSummary('confirmSummary', false);
+    document.getElementById('reserveStatus').textContent = '';
+    showInputView(true);
+  }
+
+  /**
+   * 「この内容で予約する」を押したときに、予約をGoogle Apps Scriptに送る
+   * 送っているあいだはボタンを押せなくし、結果に合わせてG3を出す
    */
   async function reserve() {
-    const result = document.getElementById('result');
+    const button = document.getElementById('reserveButton');
+    const status = document.getElementById('reserveStatus');
     const data = {
       action: 'reserve',
       date: state.date,
       plan: state.plan,
       people: state.people,
       time: state.time,
-      name: document.getElementById('name').value,
-      phone: document.getElementById('phone').value,
-      gender: document.getElementById('gender').value,
-      age: document.getElementById('age').value,
+      name: input.name,
+      phone: input.phone,
+      gender: input.gender,
+      age: input.age,
       lineUserId: lineUserId,
       lineName: lineName
     };
 
-    if (data.name.trim() === '' || data.phone.trim() === '' || data.gender === '' || data.age === '') {
-      result.textContent = 'お名前・電話番号・性別・年齢をすべて入力してください';
-      return;
-    }
-
-    const button = document.getElementById('reserve');
     button.disabled = true;
-    result.textContent = '予約しています…';
+    status.textContent = '予約しています…';
+    let answer;
     try {
       const response = await fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(data)
       });
-      const answer = await response.json();
-      result.textContent = answer.ok ? 'ご予約が完了しました' : '予約できませんでした:' + answer.error;
+      answer = await response.json();
     } catch (error) {
-      result.textContent = '通信に失敗しました。予約はまだ確定していません';
-    } finally {
+      status.textContent = '通信に失敗しました。予約はまだ確定していません。もう一度お試しください';
       button.disabled = false;
+      return;
+    }
+    button.disabled = false;
+
+    if (answer.ok) {
+      showDone();
+    } else if (String(answer.error).includes('埋まってしまいました')) {
+      showFull();
+    } else {
+      status.textContent = 'ただいまご予約を受け付けられません。お手数ですが、LINEのトークでご連絡ください';
+    }
+  }
+
+  /**
+   * G3(予約できたとき)を出す
+   */
+  function showDone() {
+    const isCafe = state.plan === 'A';
+    document.getElementById('doneMark').classList.toggle('soudan', !isCafe);
+    document.getElementById('doneImage').src = planImage();
+    renderSummary('doneSummary', true);
+    document.getElementById('doneView').hidden = false;
+    document.getElementById('fullView').hidden = true;
+    showScreen('g3');
+  }
+
+  /**
+   * G3(確定の直前に埋まっていたとき)を出す
+   */
+  function showFull() {
+    document.getElementById('doneView').hidden = true;
+    document.getElementById('fullView').hidden = false;
+    showScreen('g3');
+  }
+
+  /**
+   * 「日時を選び直す」を押したときに、G1に戻る(プラン・人数・日にちと入力した内容は残し、時刻は聞き直す)
+   */
+  function reselect() {
+    showInputView(false);
+    backToSelect();
+  }
+
+  /**
+   * 「閉じる」を押したときに、LINEの中ならミニアプリを閉じてトークに戻る
+   */
+  function closeApp() {
+    if (window.liff && liff.isInClient()) {
+      liff.closeWindow();
+    } else {
+      window.close();
     }
   }
 
@@ -626,9 +976,26 @@
   document.getElementById('timePicker').addEventListener('click', toggleTimes);
   document.getElementById('nextButton').addEventListener('click', goToInput);
   document.getElementById('backButton').addEventListener('click', backToSelect);
-  document.getElementById('reserve').addEventListener('click', reserve);
+  for (const radio of document.querySelectorAll('input[name="gender"]')) {
+    radio.addEventListener('change', () => {
+      input.gender = radio.value;
+      updateGender();
+    });
+  }
+  document.getElementById('agePicker').addEventListener('click', toggleAge);
+  document.getElementById('consent').addEventListener('change', event => {
+    document.getElementById('confirmButton').disabled = !event.target.checked;
+  });
+  document.getElementById('name').addEventListener('input', () => showError('nameError', ''));
+  document.getElementById('phone').addEventListener('input', () => showError('phoneError', ''));
+  document.getElementById('confirmButton').addEventListener('click', goToConfirm);
+  document.getElementById('editButton').addEventListener('click', () => showInputView(false));
+  document.getElementById('reserveButton').addEventListener('click', reserve);
+  document.getElementById('reselectButton').addEventListener('click', reselect);
+  document.getElementById('closeButton').addEventListener('click', closeApp);
 
   updatePlan();
+  buildAgeList();
   prefetchMonths();
   initLine();
 </script>
