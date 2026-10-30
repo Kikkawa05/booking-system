@@ -268,7 +268,7 @@
       <p class="error" id="nameError" hidden></p>
 
       <label class="field-label" for="phone">電話番号<span class="required">必須</span></label>
-      <input class="text-input" type="tel" id="phone" autocomplete="tel" inputmode="tel" placeholder="例)090-0000-0000">
+      <input class="text-input" type="tel" id="phone" autocomplete="tel" inputmode="tel" placeholder="例)09000000000">
       <p class="error" id="phoneError" hidden></p>
 
       <div class="field-label" id="genderLabel">性別<span class="required">必須</span></div>
@@ -698,7 +698,7 @@
     const box = document.getElementById(elementId);
     const isCafe = state.plan === 'A';
     box.classList.toggle('soudan', !isCafe);
-    const planText = isCafe ? 'カフェ+初回相談<br>(パンケーキ+ドリンク付き)' : 'ご相談(90分)';
+    const planText = isCafe ? 'カフェ+初回相談(135分)<br>(パンケーキ+ドリンク付き)' : 'ご相談(90分)';
     const rows = [
       ['プラン', planText, isCafe ? 'fa-solid fa-mug-hot' : 'fa-regular fa-comments'],
       ['人数', state.people + '名', 'fa-solid fa-user'],
