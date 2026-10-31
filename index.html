@@ -1004,6 +1004,18 @@
   }
 
   /**
+   * 確定連絡をすぐに送るよう、Google Apps Scriptに頼む(答えは待たない。失敗したらトリガーが送る)
+   */
+  function sendConfirmRequest() {
+    fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'confirm' }),
+      keepalive: true
+    }).catch(() => {});
+  }
+
+  /**
    * 「この内容で予約する」を押したときに、予約をGoogle Apps Scriptに送る
    * 送っているあいだはボタンを押せなくし、結果に合わせてG3を出す
    */
@@ -1054,6 +1066,7 @@
 
     if (answer.ok) {
       showDone();
+      sendConfirmRequest();
     } else if (String(answer.error).includes('埋まってしまいました')) {
       showFull();
     } else {
