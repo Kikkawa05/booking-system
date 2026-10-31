@@ -360,7 +360,7 @@
       <div class="summary icons" id="doneSummary"></div>
       <div class="notice">
         <i class="fa-brands fa-line" aria-hidden="true"></i>
-        <p id="lineNotice">LINEに確定のお知らせを送りました。<br>前日19時にもLINEでお知らせします。</p>
+        <p id="lineNotice">まもなくLINEに確定のお知らせが届きます。<br>前日19時にもLINEでお知らせします。</p>
       </div>
       <div class="notice">
         <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
@@ -980,7 +980,7 @@
     button.disabled = false;
 
     if (answer.ok) {
-      showDone(answer.lineSent);
+      showDone();
     } else if (String(answer.error).includes('埋まってしまいました')) {
       showFull();
     } else {
@@ -989,13 +989,10 @@
   }
 
   /**
-   * G3(予約できたとき)を出す。LINEの確定連絡を送れなかったときは、お知らせの文を変える
+   * G3(予約できたとき)を出す
    */
-  function showDone(lineSent) {
+  function showDone() {
     const isCafe = state.plan === 'A';
-    document.getElementById('lineNotice').innerHTML = lineSent
-      ? 'LINEに確定のお知らせを送りました。<br>前日19時にもLINEでお知らせします。'
-      : 'LINEでのお知らせを送れませんでした。<br>ご予約は確定しています。この画面で内容をご確認ください。';
     document.getElementById('doneMark').classList.toggle('soudan', !isCafe);
     document.getElementById('doneImage').src = planImage();
     renderSummary('doneSummary', true);
