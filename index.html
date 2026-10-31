@@ -360,7 +360,7 @@
       <div class="summary icons" id="doneSummary"></div>
       <div class="notice">
         <i class="fa-brands fa-line" aria-hidden="true"></i>
-        <p id="lineNotice">まもなくLINEに予約確定のお知らせが届きます。<br>前日19時にもLINEでお知らせします。</p>
+        <p id="lineNotice">まもなくLINEに確定のお知らせが届きます。<br>前日19時にもLINEでお知らせします。</p>
       </div>
       <div class="notice">
         <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
@@ -513,23 +513,38 @@
   }
 
   /**
-   * カレンダーを開く・閉じる。開くときは、選んでいる日の月(なければ今月)を表示する
+   * カレンダーを開く・閉じる。開くときは、選んでいる日の月(なければ、予約できる日がある最初の月)を表示する
    */
-  function toggleCalendar() {
+  async function toggleCalendar() {
     const open = document.getElementById('calendarPanel').hidden;
     setPanel('datePicker', 'calendarPanel', open);
     if (!open) return;
-    const base = state.date !== '' ? state.date : todayText();
-    const [y, m] = base.split('-').map(Number);
+    if (state.date !== '') {
+      const [y, m] = state.date.split('-').map(Number);
+      showMonth(y, m);
+      return;
+    }
+    document.getElementById('calendarMessage').textContent = '読み込んでいます…';
+    const [y, m] = await firstOpenMonth();
     showMonth(y, m);
   }
 
   /**
-   * 今日の日付を "2026-10-30" の形で返す
+   * 今のプランと人数で、予約できる日が1日でもある最初の月を探す(今月から予約できる期間の最後の月まで)
+   * 見つからないとき、または通信に失敗したときは今月を返す
    */
-  function todayText() {
+  async function firstOpenMonth() {
     const now = new Date();
-    return monthKey(now.getFullYear(), now.getMonth() + 1) + '-' + String(now.getDate()).padStart(2, '0');
+    for (let i = 0; i <= BOOKING_MONTHS; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      try {
+        const days = await getMonthData(monthKey(d.getFullYear(), d.getMonth() + 1));
+        if (Object.values(days).some(hasTimes)) return [d.getFullYear(), d.getMonth() + 1];
+      } catch (error) {
+        break;
+      }
+    }
+    return [now.getFullYear(), now.getMonth() + 1];
   }
 
   /**
