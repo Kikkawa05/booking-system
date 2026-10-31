@@ -391,6 +391,7 @@
   const timesCache = {};
   let lineUserId = '';
   let lineName = '';
+  let friendCheck = null;
   let timesRequest = 0;
   const input = { name: '', phone: '', gender: '', age: 0 };
 
@@ -930,6 +931,18 @@
     renderSummary('confirmSummary', false);
     document.getElementById('reserveStatus').textContent = '';
     showInputView(true);
+    friendCheck = isFriend();
+  }
+
+  /**
+   * 「この内容で予約する」ボタンを、予約中の表示(押せない・「予約しています…」と回るマーク)にする/元に戻す
+   */
+  function setReserving(on) {
+    const button = document.getElementById('reserveButton');
+    button.disabled = on;
+    button.innerHTML = on
+      ? '予約しています…<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>'
+      : 'この内容で予約する<i class="fa-solid fa-chevron-right" aria-hidden="true"></i>';
   }
 
   /**
@@ -937,7 +950,6 @@
    * 送っているあいだはボタンを押せなくし、結果に合わせてG3を出す
    */
   async function reserve() {
-    const button = document.getElementById('reserveButton');
     const status = document.getElementById('reserveStatus');
     const data = {
       action: 'reserve',
@@ -957,13 +969,16 @@
       status.textContent = 'LINEの情報を確認できませんでした。お手数ですが、LINEからもう一度開いてください';
       return;
     }
-    if (!(await isFriend())) {
+    setReserving(true);
+    status.textContent = '';
+    const friend = await (friendCheck ?? isFriend());
+    friendCheck = null;
+    if (!friend) {
+      setReserving(false);
       showScreen('gate');
       return;
     }
 
-    button.disabled = true;
-    status.textContent = '予約しています…';
     let answer;
     try {
       const response = await fetch(GAS_URL, {
@@ -974,10 +989,10 @@
       answer = await response.json();
     } catch (error) {
       status.textContent = '通信に失敗しました。予約はまだ確定していません。もう一度お試しください';
-      button.disabled = false;
+      setReserving(false);
       return;
     }
-    button.disabled = false;
+    setReserving(false);
 
     if (answer.ok) {
       showDone();
