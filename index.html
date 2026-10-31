@@ -162,6 +162,8 @@
     .gate .fa-line { font-size: 64px; color: #06C755; }
     .gate h2 { font-size: 20px; font-weight: 400; margin: 16px 0; }
     .gate p { font-size: 15px; text-align: left; }
+    .gate .fa-circle-exclamation { font-size: 56px; color: var(--gray-text); }
+    .gate .error-detail { font-size: 12px; color: var(--gray-text); text-align: center; word-break: break-all; }
 
     .done-mark {
       width: 64px; height: 64px; margin: 8px auto 16px; border-radius: 50%; background: var(--pink);
@@ -187,6 +189,13 @@
     <p>友だち追加をすると、ご予約の確定と前日のお知らせがLINEで届きます。</p>
     <button type="button" class="main-button" id="addFriendButton">友だち追加する</button>
     <p class="status" id="gateStatus" role="status"></p>
+  </section>
+
+  <section id="lineError" class="gate" hidden>
+    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+    <h2>LINEの情報を確認できませんでした</h2>
+    <p>お手数ですが、この画面をいったん閉じて、LINEからもう一度開いてください。</p>
+    <p class="error-detail" id="lineErrorDetail"></p>
   </section>
 
   <section id="g1">
@@ -372,7 +381,7 @@
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
   const LIFF_ID = '2012030179-np6mAazS';
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycby0l6BnbrJd7gjl_6gYJ-whQloyQOdfKA3G5iIuOIcNEJ1oHuXpbEa7D40MnKpi-Anr/exec';
+  const GAS_URL = 'ここに今のGoogle Apps ScriptのURLを貼る';
   const BOOKING_MONTHS = 3;
   const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -402,6 +411,8 @@
       if (!(await isFriend())) showScreen('gate');
     } catch (error) {
       console.log('LINEの情報を取れませんでした:' + error.message);
+      document.getElementById('lineErrorDetail').textContent = '理由:' + error.message;
+      showScreen('lineError');
     }
   }
 
@@ -731,7 +742,7 @@
    * 表示する画面を1つだけにする('gate'・'g1'・'g2'・'g3' のどれか)。画面のいちばん上に戻る
    */
   function showScreen(id) {
-    for (const screen of ['gate', 'g1', 'g2', 'g3']) {
+    for (const screen of ['gate', 'lineError', 'g1', 'g2', 'g3']) {
       document.getElementById(screen).hidden = screen !== id;
     }
     window.scrollTo(0, 0);
