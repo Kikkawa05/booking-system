@@ -151,11 +151,20 @@
     .summary.icons i { color: var(--pink); font-size: 18px; }
     .summary.icons.soudan i { color: var(--blue); }
 
-    .confirm-item { margin: 18px 0 0; }
-    .confirm-item dt { font-weight: 700; font-size: 16px; }
-    .confirm-item dd { margin: 8px 0 0 16px; font-size: 16px; }
-    .confirm-item dd i { color: var(--pink); margin-right: 8px; }
-    .confirm-item dd i.fa-user-tie { color: var(--blue); }
+    .confirm-list { display: grid; grid-template-columns: 6.5em 1fr; margin: 0; border-top: 1px solid var(--gray); font-size: 15px; }
+    .confirm-list dt, .confirm-list dd { margin: 0; padding: 5px 0; border-bottom: 1px solid var(--gray); }
+    .confirm-list dt { color: var(--gray-text); }
+    .confirm-list dd i { color: var(--pink); margin-right: 8px; }
+    .confirm-list dd i.fa-user-tie { color: var(--blue); }
+    #confirmView .page-title { font-size: 20px; }
+    .summary.compact { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 12px 14px; }
+    .summary.compact .summary-body { flex: 1; min-width: 0; }
+    .summary.compact h3 { font-size: 16px; margin: 0 0 6px; }
+    .summary.compact dl { grid-template-columns: 3.5em 1fr; row-gap: 2px; margin: 0; padding-left: 0; font-size: 14px; line-height: 1.5; }
+    .summary.compact .plan-sub { font-size: 12px; white-space: nowrap; }
+    .summary.compact img { width: 72px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .confirm-buttons { display: grid; grid-template-columns: 1fr 1.7fr; gap: 12px; margin-top: 16px; }
+    .confirm-buttons .main-button, .confirm-buttons .sub-button { margin-top: 0; }
     .status { color: var(--gray-text); text-align: center; margin: 16px 0 0; }
 
     .gate { text-align: center; padding-top: 24px; }
@@ -353,19 +362,21 @@
 
     <div id="confirmView" hidden>
       <h2 class="page-title">お客様情報の確認</h2>
-      <dl>
-        <div class="confirm-item"><dt>お名前</dt><dd id="confirmName"></dd></div>
-        <div class="confirm-item"><dt>電話番号</dt><dd id="confirmPhone"></dd></div>
-        <div class="confirm-item"><dt>性別</dt><dd id="confirmGender"></dd></div>
-        <div class="confirm-item"><dt>年齢</dt><dd id="confirmAge"></dd></div>
-        <div class="confirm-item"><dt>個人情報の取り扱いについて</dt><dd>同意済み</dd></div>
+      <dl class="confirm-list">
+        <dt>お名前</dt><dd id="confirmName"></dd>
+        <dt>電話番号</dt><dd id="confirmPhone"></dd>
+        <dt>性別</dt><dd id="confirmGender"></dd>
+        <dt>年齢</dt><dd id="confirmAge"></dd>
+        <dt>個人情報</dt><dd>取り扱いに同意済み</dd>
       </dl>
 
-      <div class="summary" id="confirmSummary"></div>
+      <div class="summary compact" id="confirmSummary"></div>
 
-      <button type="button" class="main-button" id="reserveButton">この内容で予約する<i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+      <div class="confirm-buttons">
+        <button type="button" class="sub-button" id="editButton">修正する</button>
+        <button type="button" class="main-button" id="reserveButton">この内容で予約する<i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+      </div>
       <p class="status" id="reserveStatus" role="status"></p>
-      <button type="button" class="sub-button" id="editButton">修正する</button>
     </div>
   </section>
 
@@ -814,13 +825,13 @@
   }
 
   /**
-   * 「ご予約内容」の枠を作る。withIcons が true ならG3用(アイコン付き・画像なし)
+   * 「ご予約内容」の枠を作る。mode が 'input' ならG2入力用(下に大きい画像)、'confirm' ならG2確認用(右に小さい画像)、'done' ならG3用(アイコン付き・画像なし)
    */
-  function renderSummary(elementId, withIcons) {
+  function renderSummary(elementId, mode) {
     const box = document.getElementById(elementId);
     const isCafe = state.plan === 'A';
     box.classList.toggle('soudan', !isCafe);
-    const planText = isCafe ? 'カフェ+初回相談(135分)<br>(パンケーキ+ドリンク付き)' : 'ご相談(90分)';
+    const planText = isCafe ? 'カフェ+初回相談(135分)<br><span class="plan-sub">(パンケーキ+ドリンク付き)</span>' : 'ご相談(90分)';
     const rows = [
       ['プラン', planText, isCafe ? 'fa-solid fa-mug-hot' : 'fa-regular fa-comments'],
       ['人数', state.people + '名', 'fa-solid fa-user'],
@@ -829,12 +840,23 @@
     ];
     let html = '<h3>ご予約内容</h3><dl>';
     for (const [label, value, icon] of rows) {
-      if (withIcons) html += '<i class="' + icon + '" aria-hidden="true"></i>';
+      if (mode === 'done') html += '<i class="' + icon + '" aria-hidden="true"></i>';
       html += '<dt>' + label + '</dt><dd>' + value + '</dd>';
     }
     html += '</dl>';
-    if (!withIcons) html += '<img src="' + planImage() + '" width="720" height="480" alt="">';
+    if (mode === 'input') {
+      html += '<img src="' + planImage() + '" width="720" height="480" alt="">';
+    } else if (mode === 'confirm') {
+      html = '<div class="summary-body">' + html + '</div><img src="' + planThumb() + '" width="288" height="240" alt="">';
+    }
     box.innerHTML = html;
+  }
+
+  /**
+   * 選んだプランの小さい画像のファイル名を返す(G1のプランのカードと同じ画像)
+   */
+  function planThumb() {
+    return state.plan === 'A' ? 'images/thumb-cafe.webp' : 'images/thumb-soudan.webp';
   }
 
   /**
@@ -848,7 +870,7 @@
    * 「次へ」を押したときに、G2(入力の表示)を出す
    */
   function goToInput() {
-    renderSummary('inputSummary', false);
+    renderSummary('inputSummary', 'input');
     showInputView(false);
     showScreen('g2');
   }
@@ -982,7 +1004,7 @@
     const genderIcon = input.gender === '女性' ? 'fa-user' : 'fa-user-tie';
     document.getElementById('confirmGender').innerHTML = '<i class="fa-solid ' + genderIcon + '" aria-hidden="true"></i>' + input.gender;
     document.getElementById('confirmAge').textContent = input.age + '歳';
-    renderSummary('confirmSummary', false);
+    renderSummary('confirmSummary', 'confirm');
     document.getElementById('reserveStatus').textContent = '';
     showInputView(true);
     friendCheck = isFriend();
@@ -1081,7 +1103,7 @@
     const isCafe = state.plan === 'A';
     document.getElementById('doneMark').classList.toggle('soudan', !isCafe);
     document.getElementById('doneImage').src = planImage();
-    renderSummary('doneSummary', true);
+    renderSummary('doneSummary', 'done');
     document.getElementById('doneView').hidden = false;
     document.getElementById('fullView').hidden = true;
     showScreen('g3');
