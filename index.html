@@ -163,8 +163,10 @@
     .summary.compact dl { grid-template-columns: 3.5em 1fr; row-gap: 2px; margin: 0; padding-left: 0; font-size: 14px; line-height: 1.5; }
     .summary.compact .plan-sub { font-size: 12px; white-space: nowrap; }
     .summary.compact img { width: 72px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-    .confirm-buttons { display: grid; grid-template-columns: 1fr 1.7fr; gap: 12px; margin-top: 16px; }
-    .confirm-buttons .main-button, .confirm-buttons .sub-button { margin-top: 0; }
+    .confirm-buttons { margin-top: 16px; }
+    .confirm-buttons .main-button { margin-top: 0; }
+    .confirm-buttons .status:empty { display: none; }
+    .confirm-buttons .sub-button { margin-top: 12px; }
     .status { color: var(--gray-text); text-align: center; margin: 16px 0 0; }
 
     .gate { text-align: center; padding-top: 24px; }
@@ -373,10 +375,10 @@
       <div class="summary compact" id="confirmSummary"></div>
 
       <div class="confirm-buttons">
-        <button type="button" class="sub-button" id="editButton">修正する</button>
         <button type="button" class="main-button" id="reserveButton">この内容で予約する<i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+        <p class="status" id="reserveStatus" role="status"></p>
+        <button type="button" class="sub-button" id="editButton">修正する</button>
       </div>
-      <p class="status" id="reserveStatus" role="status"></p>
     </div>
   </section>
 
