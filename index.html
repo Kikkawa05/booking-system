@@ -41,8 +41,9 @@
     }
     .step.now .dot { background: var(--pink); color: #FFFFFF; }
     .step.done .dot { background: #FFB8C8; color: #FFFFFF; }
-    .steps.now2::after { content: ''; position: absolute; top: 18px; left: 18%; width: 32%; height: 3px; background: #FFB8C8; }
-    .steps.now3::after { content: ''; position: absolute; top: 18px; left: 18%; width: 64%; height: 3px; background: #FFB8C8; }
+    .steps.now1::after { content: ''; position: absolute; top: 18px; left: 18%; width: 16%; height: 3px; background: var(--pink); }
+    .steps.now2::after { content: ''; position: absolute; top: 18px; left: 18%; width: 48%; height: 3px; background: linear-gradient(to right, #FFB8C8 0 66.7%, var(--pink) 66.7% 100%); }
+    .steps.now3::after { content: ''; position: absolute; top: 18px; left: 18%; width: 64%; height: 3px; background: linear-gradient(to right, #FFB8C8 0 50%, var(--pink) 50% 100%); }
     .step .dot { position: relative; z-index: 1; }
 
     .visual { display: block; width: 100%; height: auto; margin-bottom: 16px; }
@@ -233,7 +234,7 @@
   </section>
 
   <section id="g1">
-    <ol class="steps" aria-label="予約の手順">
+    <ol class="steps now1" aria-label="予約の手順">
       <li class="step now"><div class="dot">1</div>予約内容の選択</li>
       <li class="step"><div class="dot">2</div>お客様情報の入力・確認</li>
       <li class="step"><div class="dot">3</div>予約完了</li>
