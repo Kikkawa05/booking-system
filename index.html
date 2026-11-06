@@ -42,7 +42,8 @@
     .step.now .dot { background: var(--pink); color: #FFFFFF; }
     .step.done .dot { background: #FFB8C8; color: #FFFFFF; }
     .steps.now1::after { content: ''; position: absolute; top: 18px; left: 18%; width: 16%; height: 3px; background: var(--pink); }
-    .steps.now2::after { content: ''; position: absolute; top: 18px; left: 18%; width: 48%; height: 3px; background: linear-gradient(to right, #FFB8C8 0 66.7%, var(--pink) 66.7% 100%); }
+    .steps.now2::after { content: ''; position: absolute; top: 18px; left: 18%; width: 45.5%; height: 3px; background: linear-gradient(to right, #FFB8C8 0 70.3%, var(--pink) 70.3% 100%); }
+    .steps.now2.confirm::after { width: 54%; background: linear-gradient(to right, #FFB8C8 0 59.3%, var(--pink) 59.3% 100%); }
     .steps.now3::after { content: ''; position: absolute; top: 18px; left: 18%; width: 64%; height: 3px; background: linear-gradient(to right, #FFB8C8 0 50%, var(--pink) 50% 100%); }
     .step .dot { position: relative; z-index: 1; }
 
@@ -824,6 +825,7 @@
     document.getElementById('inputView').hidden = confirm;
     document.getElementById('confirmView').hidden = !confirm;
     document.getElementById('step2Label').textContent = confirm ? 'お客様情報の確認' : 'お客様情報の入力';
+    document.querySelector('#g2 .steps').classList.toggle('confirm', confirm);
     window.scrollTo(0, 0);
   }
 
